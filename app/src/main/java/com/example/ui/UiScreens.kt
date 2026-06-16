@@ -60,6 +60,8 @@ fun AppMainScreen(viewModel: MainViewModel) {
     val lang by viewModel.currentLanguage.collectAsState()
     val isMusicPlaying by viewModel.isMusicPlaying.collectAsState()
     val isMuted by viewModel.isMusicMuted.collectAsState()
+    val footMusicUrl by viewModel.footMusicUrl.collectAsState()
+    var showMusicUrlDialog by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
     var showAuthDialog by remember { mutableStateOf(false) }
@@ -121,7 +123,79 @@ fun AppMainScreen(viewModel: MainViewModel) {
                             "settings" -> SettingsTab(viewModel)
                             "admin" -> {
                                 if (currentUser?.role == "admin") {
-                                    AdminTab(viewModel)
+                                    var adminSecuredAccess by remember { mutableStateOf(false) }
+                                    if (adminSecuredAccess) {
+                                        AdminTab(viewModel)
+                                    } else {
+                                        var codeInput by remember { mutableStateOf("") }
+                                        var errorMessage by remember { mutableStateOf("") }
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .background(DarkBackground)
+                                                .padding(24.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Card(
+                                                colors = CardDefaults.cardColors(containerColor = CardBackground),
+                                                border = BorderStroke(1.dp, NeonGreen.copy(0.3f)),
+                                                shape = RoundedCornerShape(24.dp),
+                                                modifier = Modifier.fillMaxWidth().testTag("admin_secure_gate")
+                                            ) {
+                                                Column(
+                                                    modifier = Modifier.padding(24.dp),
+                                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                                                ) {
+                                                    Text(
+                                                        text = "🔒 خادم الـ Admin محمي",
+                                                        color = Color.White,
+                                                        fontSize = 18.sp,
+                                                        fontWeight = FontWeight.Bold
+                                                    )
+                                                    Text(
+                                                        text = "الرجاء إدخال كود المرور الخاص بالأدمن للدخول:",
+                                                        color = TextMuted,
+                                                        fontSize = 12.sp,
+                                                        textAlign = TextAlign.Center
+                                                    )
+                                                    OutlinedTextField(
+                                                        value = codeInput,
+                                                        onValueChange = {
+                                                            codeInput = it
+                                                            errorMessage = ""
+                                                        },
+                                                        label = { Text("كود الدخول (Admin Code)") },
+                                                        singleLine = true,
+                                                        visualTransformation = PasswordVisualTransformation(),
+                                                        colors = OutlinedTextFieldDefaults.colors(
+                                                            focusedBorderColor = NeonGreen,
+                                                            unfocusedBorderColor = Color.White.copy(0.12f),
+                                                            focusedLabelColor = NeonGreen
+                                                        ),
+                                                        modifier = Modifier.fillMaxWidth().testTag("admin_code_input")
+                                                    )
+                                                    if (errorMessage.isNotEmpty()) {
+                                                        Text(errorMessage, color = Color.Red, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                                    }
+                                                    Button(
+                                                        onClick = {
+                                                            if (codeInput.trim() == "BILLKPLLH") {
+                                                                adminSecuredAccess = true
+                                                            } else {
+                                                                errorMessage = "الكود غير صحيح! حاول مجدداً."
+                                                            }
+                                                        },
+                                                        colors = ButtonDefaults.buttonColors(containerColor = NeonGreen, contentColor = Color.White),
+                                                        shape = RoundedCornerShape(12.dp),
+                                                        modifier = Modifier.fillMaxWidth().height(48.dp).testTag("verify_admin_code_button")
+                                                    ) {
+                                                        Text("دخول الخادم", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
                                 } else {
                                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                         Text("غير مصرح لك بدخول لوحة التحكم.", color = Color.Red, fontSize = 18.sp)
@@ -138,9 +212,66 @@ fun AppMainScreen(viewModel: MainViewModel) {
                             isMuted = isMuted,
                             onTogglePlay = { viewModel.togglePlayPauseMusic() },
                             onToggleMute = { viewModel.toggleFootMusicMute() },
+                            onEditUrl = { showMusicUrlDialog = true },
                             modifier = Modifier
                                 .align(Alignment.BottomEnd)
                                 .padding(16.dp)
+                        )
+                    }
+
+                    // Custom dynamic sound URL selection dialog popup
+                    if (showMusicUrlDialog) {
+                        var tempUrl by remember { mutableStateOf(footMusicUrl) }
+                        AlertDialog(
+                            onDismissRequest = { showMusicUrlDialog = false },
+                            containerColor = CardBackground,
+                            titleContentColor = Color.White,
+                            textContentColor = TextMuted,
+                            title = {
+                                Text(
+                                    text = "تغيير بث الأغنية 🎶",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 18.sp
+                                )
+                            },
+                            text = {
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Text(
+                                        text = "أدخل رابط بث ملف صوتي مباشراً (MP3/WAV/etc.) لتشغيله كخلفية صوتية في قسم المباريات:",
+                                        fontSize = 12.sp
+                                    )
+                                    OutlinedTextField(
+                                        value = tempUrl,
+                                        onValueChange = { tempUrl = it },
+                                        label = { Text("رابط الصوت المباشر") },
+                                        singleLine = true,
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedBorderColor = NeonGreen,
+                                            unfocusedBorderColor = Color.White.copy(0.12f),
+                                            focusedLabelColor = NeonGreen
+                                        ),
+                                        modifier = Modifier.fillMaxWidth().testTag("custom_audio_url_input")
+                                    )
+                                }
+                            },
+                            confirmButton = {
+                                Button(
+                                    onClick = {
+                                        viewModel.updateFootMusicUrl(tempUrl)
+                                        showMusicUrlDialog = false
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = NeonGreen, contentColor = Color.White)
+                                ) {
+                                    Text("حفظ وتعديل", fontWeight = FontWeight.Bold)
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(
+                                    onClick = { showMusicUrlDialog = false }
+                                ) {
+                                    Text("إلغاء", color = Color.White)
+                                }
+                            }
                         )
                     }
 
@@ -1799,6 +1930,7 @@ fun FloatingAudioController(
     isMuted: Boolean,
     onTogglePlay: () -> Unit,
     onToggleMute: () -> Unit,
+    onEditUrl: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -1826,6 +1958,13 @@ fun FloatingAudioController(
                     text = if (isMuted) "🔇" else "🔊",
                     color = NeonGreen,
                     fontSize = 14.sp
+                )
+            }
+            IconButton(onClick = onEditUrl, modifier = Modifier.size(32.dp)) {
+                Text(
+                    text = "⚙️",
+                    color = NeonGreen,
+                    fontSize = 12.sp
                 )
             }
         }

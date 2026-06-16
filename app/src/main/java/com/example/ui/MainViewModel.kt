@@ -64,6 +64,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val friendsList: StateFlow<List<FriendEntity>> = _friendsList.asStateFlow()
 
     // Background Football Music Controller
+    private val _footMusicUrl = MutableStateFlow("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3")
+    val footMusicUrl: StateFlow<String> = _footMusicUrl.asStateFlow()
+
     private var mediaPlayer: MediaPlayer? = null
     private val _isMusicPlaying = MutableStateFlow(false)
     val isMusicPlaying: StateFlow<Boolean> = _isMusicPlaying.asStateFlow()
