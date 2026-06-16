@@ -1,0 +1,6 @@
+{
+  "name": "BILLK+",
+  "description": "منصة بيلك بلس لمشاهدة الأفلام والمسلسلات والمباريات المباشرة وقسم خاص بالأطفال وألعاب وسيرفر محلي متكامل للاشتراكات والتحكم بالأعضاء.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
